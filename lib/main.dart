@@ -10,6 +10,17 @@ import 'package:shop_app/screens/product_detail_screen.dart';
 import 'package:shop_app/screens/products_overview_screen.dart';
 import 'package:shop_app/screens/user_products_screen.dart';
 
+//configurazione utilizzando direttamente le librerie di Firebase
+/* 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+Future<void> main() async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(MyApp());
+} */
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
