@@ -42,6 +42,10 @@ class Products with ChangeNotifier {
     ), */
   ];
 
+  final String authToken;
+
+  Products(this.authToken, this._items);
+
   List<Product> get items {
     return [..._items];
   }
@@ -55,9 +59,8 @@ class Products with ChangeNotifier {
   }
 
   Future<void> fetchAndSetProducts() async {
-    final url = Uri.https(
-        'shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app',
-        '/products.json');
+    final url = Uri.parse(
+        'https://shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app/products.json?auth=$authToken');
     try {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
