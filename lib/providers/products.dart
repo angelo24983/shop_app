@@ -44,7 +44,9 @@ class Products with ChangeNotifier {
 
   final String authToken;
 
-  Products(this.authToken, this._items);
+  final String userId;
+
+  Products(this.authToken, this.userId, this._items);
 
   List<Product> get items {
     return [..._items];
@@ -58,15 +60,24 @@ class Products with ChangeNotifier {
     return _items.firstWhere((product) => product.id == productId);
   }
 
-  Future<void> fetchAndSetProducts() async {
-    final url = Uri.parse(
-        'https://shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app/products.json?auth=$authToken');
+  Future<void> fetchAndSetProducts([bool filterByUser = false]) async {
+    final filterString =
+        filterByUser ? 'orderBy="creatorId"&equalTo="$userId"' : '';
+    var url = Uri.parse(
+        'https://shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app/products.json?auth=$authToken&$filterString');
     try {
-      final response = await http.get(url);
+      var response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
       if (extractedData == null) {
         return;
       }
+
+      url = Uri.parse(
+          'https://shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app/userFavorites/$userId.json?auth=$authToken');
+
+      response = await http.get(url);
+      final favoritesData = json.decode(response.body);
+
       final List<Product> loadedProducts = [];
       extractedData.forEach((prodId, prodData) {
         loadedProducts.add(Product(
@@ -74,7 +85,8 @@ class Products with ChangeNotifier {
           description: prodData['description'],
           title: prodData['title'],
           price: prodData['price'],
-          isFavorite: prodData['isFavorite'],
+          isFavorite:
+              favoritesData == null ? false : favoritesData['prodId'] ?? false,
           imageUrl: prodData['imageUrl'],
         ));
       });
@@ -86,9 +98,8 @@ class Products with ChangeNotifier {
   }
 
   Future<void> addProduct(Product product) async {
-    final url = Uri.https(
-        'shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app',
-        '/products.json');
+    final url = Uri.parse(
+        'https://shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app/products.json?auth=$authToken');
     try {
       final response = await http.post(
         url,
@@ -97,7 +108,7 @@ class Products with ChangeNotifier {
           'description': product.description,
           'price': product.price,
           'imageUrl': product.imageUrl,
-          'isFavorite': product.isFavorite,
+          'creatorId': userId,
         }),
       );
 
@@ -119,9 +130,8 @@ class Products with ChangeNotifier {
   Future<void> updateProduct(String id, Product newProduct) async {
     final prodIndex = _items.indexWhere((product) => product.id == id);
     if (prodIndex >= 0) {
-      final url = Uri.https(
-          'shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app',
-          '/products/$id.json');
+      final url = Uri.parse(
+          'https://shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app/products.json/$id.json?auth=$authToken');
       await http.patch(url,
           body: json.encode({
             'title': newProduct.title,
@@ -137,9 +147,8 @@ class Products with ChangeNotifier {
   }
 
   Future<void> deleteProduct(String id) async {
-    final url = Uri.https(
-        'shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app',
-        '/products/$id.json');
+    final url = Uri.parse(
+        'https://shop-app-63f61-default-rtdb.europe-west1.firebasedatabase.app/products.json/$id.json?auth=$authToken');
     final existingProductIndex = _items.indexWhere((prod) => prod.id == id);
     var existingProduct = _items[existingProductIndex];
     _items.removeAt(existingProductIndex);
